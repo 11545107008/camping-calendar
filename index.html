@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>露营搭子配对 · 老挂历</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&family=Long+Cang&display=swap" rel="stylesheet">
+<style>
+  /* ====== 全局：奶奶家的挂历风 ====== */
+  :root{
+    --paper:#f3e9d2;        /* 泛黄米纸 */
+    --paper-dark:#e8d9b6;
+    --ink:#3a2e22;          /* 老墨色 */
+    --ink-soft:#6b5a47;
+    --stamp:#b5342b;        /* 印章朱红 */
+    --stamp-light:#c94a3f;
+    --gold:#b08434;
+    --line:#c9b894;         /* 信纸横线 */
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{min-height:100%;}
+  body{
+    font-family:"Ma Shan Zheng","ZCOOL KuaiLe","STKaiti","KaiTi","楷体",cursive;
+    color:var(--ink);
+    background:
+      radial-gradient(ellipse at top,#2a1f14 0%,#1a120a 100%);
+    min-height:100vh;
+    padding:24px 12px;
+    overflow-x:hidden;
+  }
+
+  /* 纸张纹理 + 噪点 */
+  .paper{
+    position:relative;
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg,transparent 0,transparent 31px,rgba(120,90,50,.08) 31px,rgba(120,90,50,.08) 32px),
+      radial-gradient(circle at 20% 10%,rgba(181,52,43,.04),transparent 40%),
+      radial-gradient(circle at 80% 80%,rgba(176,132,52,.05),transparent 45%);
+    border-radius:4px;
+    box-shadow:0 20px 60px rgba(0,0,0,.6),inset 0 0 80px rgba(120,90,50,.12);
+    overflow:hidden;
+  }
+  /* 纸张噪点（SVG 叠加） */
+  .paper::before{
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0 0.1  0 0 0 0.18 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  /* 撕页边缘：用 mask 模拟上沿撕纸 */
+  .tear-top{
+    -webkit-mask-image:linear-gradient(#000 0 0),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='20' preserveAspectRatio='none'><path d='M0 0 H1200 V6 Q1180 2 1160 8 T1120 6 T1080 9 T1040 5 T1000 8 T960 4 T920 7 T880 3 T840 8 T800 5 T760 9 T720 4 T680 7 T640 3 T600 8 T560 5 T520 9 T480 4 T440 7 T400 3 T360 8 T320 5 T280 9 T240 4 T200 7 T160 3 T120 8 T80 5 T40 9 T0 6 Z' fill='black'/></svg>");
+    -webkit-mask-repeat:no-repeat;
+    -webkit-mask-position:0 0,0 0;
+    -webkit-mask-size:100% 100%,100% 20px;
+    -webkit-mask-composite:source-in;
+            mask-composite:intersect;
+  }
+
+  .container{
+    width:100%;
+    max-width:640px;
+    position:relative;
+    margin:0 auto;
+  }
+
+  /* ====== 挂历头 ====== */
+  .calendar-head{
+    padding:22px 28px 14px;
+    border-bottom:3px double var(--ink);
+    position:relative;
+  }
+  .calendar-head .year{
+    font-family:"Long Cang",cursive;
+    font-size:14px;color:var(--ink-soft);letter-spacing:2px;
+  }
+  .calendar-head .title{
+    font-family:"ZCOOL KuaiLe","Ma Shan Zheng",cursive;
+    font-size:42px;line-height:1.1;color:var(--stamp);
+    text-shadow:2px 2px 0 rgba(181,52,43,.12);
+    margin-top:2px;
+  }
+  .calendar-head .subtitle{
+    font-size:16px;color:var(--ink-soft);margin-top:6px;
+  }
+  .head-stamp{
+    position:absolute;top:18px;right:24px;
+    width:68px;height:68px;border:3px solid var(--stamp);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--stamp);font-family:"Ma Shan Zheng",cursive;
+    font-size:22px;line-height:1.1;text-align:center;
+    transform:rotate(-8deg);
+    opacity:.85;
+    box-shadow:inset 0 0 0 2px rgba(181,52,43,.3);
+  }
+  .head-stamp span{display:block;}
+
+  /* 挂历打孔 */
+  .holes{position:absolute;top:0;left:0;right:0;height:14px;display:flex;justify-content:center;gap:60px;}
+  .holes::before,.holes::after{
+    content:"";width:16px;height:16px;border-radius:50%;
+    background:radial-gradient(circle at 40% 35%,#5a4a30,#2a1f14);
+    box-shadow:inset 0 2px 3px rgba(0,0,0,.6),0 1px 1px rgba(255,255,255,.15);
+    margin-top:-2px;
+  }
+
+  /* ====== 表单区 ====== */
+  .form-area{padding:18px 28px 8px;}
+  .field{margin-bottom:16px;}
+  .field-label{
+    font-size:18px;color:var(--ink);margin-bottom:8px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .field-label .idx{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;border-radius:50%;
+    background:var(--stamp);color:var(--paper);font-size:14px;
+    font-family:"ZCOOL KuaiLe",cursive;
+  }
+  .opts{display:flex;flex-wrap:wrap;gap:10px;}
+  .opt{
+    flex:1 1 calc(50% - 10px);
+    min-width:110px;
+    padding:10px 14px;
+    background:rgba(255,250,235,.5);
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    cursor:pointer;
+    font-family:"Ma Shan Zheng",cursive;
+    font-size:17px;color:var(--ink);
+    transition:all .18s;
+    text-align:center;
+    user-select:none;
+  }
+  .opt:hover{border-color:var(--gold);background:rgba(255,250,235,.85);}
+  .opt.active{
+    background:var(--stamp);color:var(--paper);
+    border-color:var(--stamp);
+    transform:translateY(-1px);
+    box-shadow:2px 3px 0 rgba(58,46,34,.25);
+  }
+
+  /* ====== 配对按钮（印章） ====== */
+  .pair-btn-wrap{padding:14px 28px 26px;display:flex;justify-content:center;}
+  .pair-btn{
+    font-family:"ZCOOL KuaiLe","Ma Shan Zheng",cursive;
+    font-size:26px;letter-spacing:6px;
+    padding:14px 46px;
+    background:var(--stamp);color:var(--paper);
+    border:3px solid var(--stamp);
+    border-radius:10px;
+    cursor:pointer;
+    position:relative;
+    box-shadow:4px 5px 0 rgba(58,46,34,.35);
+    transition:transform .12s,box-shadow .12s;
+  }
+  .pair-btn:hover{transform:translate(-1px,-1px);box-shadow:5px 6px 0 rgba(58,46,34,.35);}
+  .pair-btn:active{transform:translate(2px,3px);box-shadow:1px 1px 0 rgba(58,46,34,.35);}
+  .pair-btn::before,.pair-btn::after{
+    content:"";position:absolute;top:6px;bottom:6px;width:3px;background:var(--paper);opacity:.5;
+  }
+  .pair-btn::before{left:10px;}.pair-btn::after{right:10px;}
+
+  /* ====== 结果卡 ====== */
+  .result{
+    display:none;
+    padding:20px 28px 28px;
+    border-top:2px dashed var(--line);
+    position:relative;
+  }
+  .result.show{display:block;animation:fadeUp .6s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+  .result-head{
+    display:flex;align-items:center;gap:10px;margin-bottom:12px;
+  }
+  .result-head h2{
+    font-family:"ZCOOL KuaiLe",cursive;font-size:28px;color:var(--stamp);
+  }
+  .result-head .date{
+    font-size:15px;color:var(--ink-soft);font-family:"Long Cang",cursive;
+  }
+  .stamp-circle{
+    margin-left:auto;
+    width:74px;height:74px;border-radius:50%;
+    border:3px solid var(--stamp);color:var(--stamp);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:"Ma Shan Zheng",cursive;line-height:1;
+    transform:rotate(12deg);opacity:.9;
+  }
+  .stamp-circle .big{font-size:26px;}
+  .stamp-circle .small{font-size:11px;letter-spacing:1px;margin-top:2px;}
+
+  .result-card{
+    background:rgba(255,250,235,.55);
+    border:1.5px solid var(--line);
+    border-radius:8px;padding:16px 18px;margin-bottom:12px;
+  }
+  .result-card .label{
+    font-size:15px;color:var(--ink-soft);margin-bottom:4px;
+    font-family:"Long Cang",cursive;
+  }
+  .result-card .value{
+    font-size:22px;color:var(--ink);line-height:1.3;
+  }
+  .result-card .value.highlight{color:var(--stamp);}
+
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .tag{
+    font-size:15px;padding:4px 12px;
+    background:var(--paper-dark);color:var(--ink);
+    border:1px solid var(--line);border-radius:20px;
+  }
+
+  .tips{
+    font-size:16px;color:var(--ink-soft);line-height:1.7;
+    padding:10px 0 0;border-top:1px dashed var(--line);margin-top:6px;
+    font-family:"Long Cang",cursive;
+  }
+  .tips b{color:var(--stamp);font-weight:normal;}
+
+  .actions{display:flex;gap:12px;margin-top:18px;justify-content:center;}
+  .btn-secondary{
+    font-family:"Ma Shan Zheng",cursive;font-size:17px;
+    padding:10px 22px;background:transparent;
+    border:2px solid var(--ink);color:var(--ink);
+    border-radius:8px;cursor:pointer;
+  }
+  .btn-secondary:hover{background:var(--ink);color:var(--paper);}
+
+  /* 页脚 */
+  .foot{
+    text-align:center;font-size:13px;color:var(--ink-soft);
+    padding:10px 28px 18px;font-family:"Long Cang",cursive;opacity:.8;
+  }
+
+  @media (max-width:480px){
+    .calendar-head .title{font-size:34px;}
+    .opt{font-size:16px;padding:9px 10px;}
+    .pair-btn{font-size:22px;padding:12px 34px;}
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="paper">
+      <div class="holes"></div>
+
+      <!-- 挂历头 -->
+      <div class="calendar-head">
+        <div class="year">丙午年 · 寒露 · 宜出行 忌宅家</div>
+        <div class="title">露营搭子配对</div>
+        <div class="subtitle">—— 翻一翻老黄历，找个合适的野搭子 ——</div>
+        <div class="head-stamp"><span>1024</span><span>盲盒</span></div>
+      </div>
+
+      <!-- 配对表单 -->
+      <div class="form-area" id="formArea">
+        <div class="field" data-key="people">
+          <div class="field-label"><span class="idx">壹</span>出行人数</div>
+          <div class="opts">
+            <div class="opt" data-v="solo">一人独行</div>
+            <div class="opt" data-v="couple">二人情侣</div>
+            <div class="opt" data-v="friends">三五好友</div>
+            <div class="opt" data-v="family">全家出动</div>
+          </div>
+        </div>
+
+        <div class="field" data-key="budget">
+          <div class="field-label"><span class="idx">贰</span>预算水平</div>
+          <div class="opts">
+            <div class="opt" data-v="poor">穷游党</div>
+            <div class="opt" data-v="mid">小康之家</div>
+            <div class="opt" data-v="rich">精致氪金</div>
+          </div>
+        </div>
+
+        <div class="field" data-key="gear">
+          <div class="field-label"><span class="idx">叁</span>装备情况</div>
+          <div class="opts">
+            <div class="opt" data-v="none">空手党</div>
+            <div class="opt" data-v="half">半装备</div>
+            <div class="opt" data-v="pro">装备党</div>
+          </div>
+        </div>
+
+        <div class="field" data-key="style">
+          <div class="field-label"><span class="idx">肆</span>露营调性</div>
+          <div class="opts">
+            <div class="opt" data-v="wild">野趣自然</div>
+            <div class="opt" data-v="glamp">精致美学</div>
+            <div class="opt" data-v="kids">亲子欢乐</div>
+            <div class="opt" data-v="party">社交派对</div>
+          </div>
+        </div>
+
+        <div class="field" data-key="days">
+          <div class="field-label"><span class="idx">伍</span>出行时长</div>
+          <div class="opts">
+            <div class="opt" data-v="day">一日往返</div>
+            <div class="opt" data-v="2d1n">一晚两天</div>
+            <div class="opt" data-v="3d2n">两晚三天</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 配对按钮 -->
+      <div class="pair-btn-wrap">
+        <button class="pair-btn" id="pairBtn">翻 牌 配 对</button>
+      </div>
+
+      <!-- 结果区 -->
+      <div class="result" id="result">
+        <div class="result-head">
+          <h2>配对结果</h2>
+          <span class="date" id="today"></span>
+          <div class="stamp-circle">
+            <span class="big" id="fate">98</span>
+            <span class="small">缘分值</span>
+          </div>
+        </div>
+
+        <div class="result-card">
+          <div class="label">推荐营地</div>
+          <div class="value highlight" id="camp"></div>
+        </div>
+
+        <div class="result-card">
+          <div class="label">匹配搭子</div>
+          <div class="value" id="buddy"></div>
+          <div class="tags" id="buddyTags"></div>
+        </div>
+
+        <div class="result-card">
+          <div class="label">装备清单</div>
+          <div class="value" id="gear"></div>
+        </div>
+
+        <div class="tips" id="tips"></div>
+
+        <div class="actions">
+          <button class="btn-secondary" id="againBtn">再翻一次</button>
+        </div>
+      </div>
+
+      <div class="foot">—— 老黄历露营配对 · 仅供娱乐 户外有风险 出行需谨慎 ——</div>
+    </div>
+  </div>
+
+<script>
+  // ===== 选项交互 =====
+  const picks={};
+  document.querySelectorAll('.field').forEach(f=>{
+    const key=f.dataset.key;
+    f.querySelectorAll('.opt').forEach(o=>{
+      o.addEventListener('click',()=>{
+        f.querySelectorAll('.opt').forEach(x=>x.classList.remove('active'));
+        o.classList.add('active');
+        picks[key]=o.dataset.v;
+      });
+    });
+  });
+
+  // ===== 数据库 =====
+  const CAMPS={
+    wild:['云栖谷野营地','翠湖半岛','黑松林深处','雾灵山涧'],
+    glamp:['星野Glamping','暮光森林营地','云端帐篷酒店','半月湖度假村'],
+    kids:['阳光亲子牧场','蝴蝶谷营地','小溪谷童趣营','彩虹农场'],
+    party:['湖畔音乐营地','篝火派对基地','星河露营小镇','海湾派对营地']
+  };
+  const BUDDIES={
+    solo:['独行侠老周','背包客阿May','徒步控小林','沉默的摄影师'],
+    couple:['模范情侣阿哲&小安','新婚小两口','慢生活夫妻档','默契搭子组'],
+    friends:['欢乐四人组','烧烤帮','桌游小分队','摄影搭子团'],
+    family:['带娃奶爸老张','亲子达人雯姐','户外家庭俱乐部','温柔妈妈团']
+  };
+  const BUDDY_TRAITS={
+    solo:['社恐但靠谱','会做饭','认路满分','话少活好'],
+    couple:['自带狗粮','拍照好看','分工明确','氛围担当'],
+    friends:['气氛组','桌游大佬','烧烤师傅','麦霸'],
+    family:['带娃能手','耐心MAX','会讲故事','安全意识强']
+  };
+  const GEAR_BY_LEVEL={
+    none:['租一顶帐篷','借个睡袋','必备：头灯+防潮垫','轻装出发'],
+    half:['补一把折叠椅','带个小炉头','备足充电宝','天幕可借'],
+    pro:['全套装备清点','带上备用钉','多带一根灯串','备好急救包']
+  };
+  const STYLE_TIPS={
+    wild:'野趣自然：选一双好鞋，带足饮用水，山里信号弱请提前告知家人。',
+    glamp:'精致美学：穿搭出片优先，氛围灯、手冲壶、藤编篮是灵魂三件套。',
+    kids:'亲子欢乐：备好防蚊液、创可贴和小零食，活动强度别太大。',
+    party:'社交派对：蓝牙音箱、桌游、烧烤食材备足，玩得开心更要玩得安全。'
+  };
+  const BUDGET_TIPS={
+    poor:'穷游党：营地选免费野点，食材自带，能省则省但安全装备不能省。',
+    mid:'小康之家：选个收费正规营地，设施齐全，体验感拉满。',
+    rich:'精致氪金：直接上装备升级，Glamping 营地一站式服务，享受就完了。'
+  };
+  const DAYS_TIPS={
+    day:'一日往返：早出晚归，带上午餐便当和一壶热茶，轻松自在。',
+    '2d1n':'一晚两天：经典露营时长，一顿烧烤+一场星空，刚刚好。',
+    '3d2n':'两晚三天：可以走得更远，记得多带一天的口粮和换洗衣物。'
+  };
+
+  const rnd=arr=>arr[Math.floor(Math.random()*arr.length)];
+
+  // ===== 配对逻辑 =====
+  document.getElementById('pairBtn').addEventListener('click',()=>{
+    const required=['people','budget','gear','style','days'];
+    const missing=required.filter(k=>!picks[k]);
+    if(missing.length){
+      alert('请先把五个条件都选好，老黄历才能给你配对呀～');
+      return;
+    }
+    const {people,budget,gear,style,days}=picks;
+
+    // 计算缘分值（带点随机 + 风格匹配加成）
+    let fate=80+Math.floor(Math.random()*19); // 80-98
+    if(style==='glamp'&&budget==='rich') fate=Math.min(100,fate+2);
+    if(style==='wild'&&gear==='pro') fate=Math.min(100,fate+2);
+
+    document.getElementById('fate').textContent=fate;
+    document.getElementById('camp').textContent=rnd(CAMPS[style]);
+    document.getElementById('buddy').textContent=rnd(BUDDIES[people]);
+    const traits=BUDDY_TRAITS[people];
+    const first=rnd(traits);
+    const second=rnd(traits.filter(t=>t!==first));
+    const tags=[first,second];
+    const tagsBox=document.getElementById('buddyTags');
+    tagsBox.innerHTML=tags.map(t=>`<span class="tag">${t}</span>`).join('');
+    document.getElementById('gear').innerHTML=GEAR_BY_LEVEL[gear].map(g=>`· ${g}`).join('<br>');
+    document.getElementById('tips').innerHTML=
+      `<b>【风格贴士】</b>${STYLE_TIPS[style]}<br>`+
+      `<b>【预算建议】</b>${BUDGET_TIPS[budget]}<br>`+
+      `<b>【时长提醒】</b>${DAYS_TIPS[days]}`;
+
+    // 日期
+    const d=new Date();
+    const y=d.getFullYear(),m=d.getMonth()+1,dd=d.getDate();
+    document.getElementById('today').textContent=`${y}年${m}月${dd}日`;
+
+    const res=document.getElementById('result');
+    res.classList.remove('show');
+    void res.offsetWidth;
+    res.classList.add('show');
+    res.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+
+  // 再翻一次
+  document.getElementById('againBtn').addEventListener('click',()=>{
+    document.getElementById('pairBtn').click();
+  });
+
+  // 封面截图模式：?cover=1 时自动填充并显示结果，同时缩放以适配单屏
+  if(new URLSearchParams(location.search).get('cover')==='1'){
+    const map={people:'friends',budget:'mid',gear:'half',style:'glamp',days:'2d1n'};
+    Object.entries(map).forEach(([k,v])=>{
+      document.querySelector(`.field[data-key="${k}"] .opt[data-v="${v}"]`).click();
+    });
+    setTimeout(()=>{
+      document.getElementById('pairBtn').click();
+      // 用 zoom 缩放（影响布局高度），让整页适配单屏
+      setTimeout(()=>{
+        document.body.style.zoom='0.36';
+        document.documentElement.style.overflow='hidden';
+        document.body.style.overflow='hidden';
+        window.scrollTo(0,0);
+      },800);
+    },300);
+  }
+</script>
+</body>
+</html>
